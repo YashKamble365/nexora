@@ -54,15 +54,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-
-function getApiHost(): string {
-  if (typeof window !== "undefined") {
-    const protocol = window.location.protocol === "https:" ? "https:" : "http:"
-    const hostname = window.location.hostname || "localhost"
-    return `${protocol}//${hostname}:4000`
-  }
-  return "http://localhost:4000"
-}
+import { getApiHost } from "@/lib/api"
 
 const API_BASE = getApiHost()
 

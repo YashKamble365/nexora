@@ -2,20 +2,14 @@
 
 import * as React from "react"
 import { io, Socket } from "socket.io-client"
-import { obtainToken } from "@/lib/api"
+import { obtainToken, getApiHost } from "@/lib/api"
 
 let globalSocket: Socket | null = null
 let currentSocketToken: string | null = null
 const activeRooms = new Set<string>()
 
 function getSocketUrl(): string {
-  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL
-  if (typeof window !== "undefined") {
-    const protocol = window.location.protocol === "https:" ? "https:" : "http:"
-    const hostname = window.location.hostname || "localhost"
-    return `${protocol}//${hostname}:4000`
-  }
-  return "http://localhost:4000"
+  return getApiHost();
 }
 
 export function updateSocketAuthToken(token: string | null): Socket | null {

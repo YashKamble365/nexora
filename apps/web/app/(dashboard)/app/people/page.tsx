@@ -57,8 +57,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { getApiHost } from "@/lib/api"
 
-const API_BASE = "http://localhost:4000"
+const API_BASE = getApiHost()
 
 interface PersonDTO {
   id: string

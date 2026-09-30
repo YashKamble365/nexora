@@ -34,7 +34,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/shared/page-header"
 import { useAuth } from "@/lib/auth-context"
-import { apiClient } from "@/lib/api"
+import { apiClient, getApiBase } from "@/lib/api"
 
 interface TrendBucket {
   date: string;
@@ -176,7 +176,7 @@ export default function AdminAnalyticsPage() {
       if (isSuperAdmin && instituteScope !== 'ALL') {
         params.set('instituteId', instituteScope)
       }
-      const res = await fetch(`http://localhost:4000/api/admin/analytics/export?${params.toString()}`, {
+      const res = await fetch(`${getApiBase()}/admin/analytics/export?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       if (!res.ok) throw new Error("Export failed")

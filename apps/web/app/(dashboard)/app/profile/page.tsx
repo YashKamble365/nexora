@@ -47,7 +47,7 @@ const LinkedinIcon = ({ className }: { className?: string }) => (
 )
 
 import { useAuth } from "@/lib/auth-context"
-import { apiClient } from "@/lib/api"
+import { apiClient, getApiBase } from "@/lib/api"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -197,7 +197,7 @@ export default function ProfilePage() {
       formData.append("file", file)
 
       const token = typeof window !== "undefined" ? localStorage.getItem("nexora_token") : null
-      const res = await fetch("http://localhost:4000/api/upload", {
+      const res = await fetch(`${getApiBase()}/upload`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,

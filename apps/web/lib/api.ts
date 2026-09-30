@@ -1,14 +1,25 @@
-export function getApiBase(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL
-  if (typeof window !== "undefined") {
-    const protocol = window.location.protocol === "https:" ? "https:" : "http:"
-    const hostname = window.location.hostname || "localhost"
-    return `${protocol}//${hostname}:4000/api`
+export function getApiHost(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, "");
   }
-  return "http://localhost:4000/api"
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL.replace(/\/$/, "");
+  }
+  if (typeof window !== "undefined") {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return "http://localhost:4000";
+    }
+    return "https://nexora-svl9.onrender.com";
+  }
+  return "https://nexora-svl9.onrender.com";
 }
 
-export const API_BASE = getApiBase()
+export function getApiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  return `${getApiHost()}/api`;
+}
+
+export const API_BASE = getApiBase();
 
 export const DEMO_CREDENTIALS: Record<string, { email: string; password: string }> = {
   STUDENT: { email: "prathamesh.patange@prpcem.edu", password: "student123" },

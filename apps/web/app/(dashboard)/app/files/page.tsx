@@ -26,8 +26,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { getApiHost } from "@/lib/api"
 
-const API_BASE = "http://localhost:4000"
+const API_BASE = getApiHost()
 
 export default function FilesPage() {
   const { user } = useAuth()
