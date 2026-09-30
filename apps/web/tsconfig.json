@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@nexora/types": ["./types/index.ts"]
     }
   },
   "include": [
