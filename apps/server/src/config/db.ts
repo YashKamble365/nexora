@@ -1,10 +1,18 @@
 import mongoose from 'mongoose';
 
 export async function connectDatabase(): Promise<typeof mongoose> {
-  const uri = process.env.MONGODB_URI;
+  let uri = process.env.MONGODB_URI?.trim();
 
   if (!uri) {
     throw new Error('MONGODB_URI environment variable is missing.');
+  }
+
+  // Strip wrapping quotes and accidental key prefixes
+  if ((uri.startsWith('"') && uri.endsWith('"')) || (uri.startsWith("'") && uri.endsWith("'"))) {
+    uri = uri.slice(1, -1).trim();
+  }
+  if (uri.startsWith('MONGODB_URI=')) {
+    uri = uri.replace(/^MONGODB_URI=/, '').trim();
   }
 
   try {
