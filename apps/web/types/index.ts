@@ -248,6 +248,7 @@ export interface MessageDTO {
     name: string;
     avatarUrl?: string;
     role: Role;
+    facultyRole?: FacultyRole;
     department?: string;
   };
   content: string;

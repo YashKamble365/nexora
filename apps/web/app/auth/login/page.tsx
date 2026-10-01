@@ -5,60 +5,18 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Building2,
-  CheckCircle2,
   Eye,
   EyeOff,
-  GraduationCap,
   Lock,
   Mail,
   ShieldAlert,
-  ShieldCheck,
+  Sparkles,
   UserCheck,
-  Users,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { useAuth, DEMO_ACCOUNTS } from "@/lib/auth-context"
-
-const PERSONA_CONFIGS = [
-  {
-    key: "STUDENT",
-    label: "Student",
-    sublabel: "Undergraduate",
-    icon: GraduationCap,
-    desc: "Notices, syllabus, grievance filing, campus polls",
-  },
-  {
-    key: "COORDINATOR",
-    label: "Coordinator",
-    sublabel: "Class Faculty",
-    icon: Users,
-    desc: "Class notices, division subject notes, student approval",
-  },
-  {
-    key: "HOD",
-    label: "Dept HoD",
-    sublabel: "Academic Chair",
-    icon: Building2,
-    desc: "Curricula catalog, faculty assignments, department SLA",
-  },
-  {
-    key: "ADMIN",
-    label: "Campus Admin",
-    sublabel: "Dean / Registrar",
-    icon: ShieldCheck,
-    desc: "Institutional settings, safety alerts, audit records",
-  },
-  {
-    key: "SUPER_ADMIN",
-    label: "Super Admin",
-    sublabel: "Grid Controller",
-    icon: ShieldAlert,
-    desc: "Multi-campus verification, global policy oversight",
-  },
-]
 
 function LoginForm() {
   const router = useRouter()
@@ -66,9 +24,8 @@ function LoginForm() {
   const redirectUrl = searchParams.get("redirect") || "/app"
 
   const { login } = useAuth()
-  const [selectedPersona, setSelectedPersona] = React.useState<string>("STUDENT")
-  const [email, setEmail] = React.useState("prathamesh.patange@prpcem.edu")
-  const [password, setPassword] = React.useState("student123")
+  const [email, setEmail] = React.useState("")
+  const [password, setPassword] = React.useState("")
   const [showPassword, setShowPassword] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [isPendingApproval, setIsPendingApproval] = React.useState(false)
@@ -104,18 +61,13 @@ function LoginForm() {
     }
   }
 
-  const handlePersonaSelect = (key: string) => {
-    setSelectedPersona(key)
-    const acc = DEMO_ACCOUNTS[key]
+  const fillSuperAdmin = () => {
+    const acc = DEMO_ACCOUNTS.SUPER_ADMIN
     if (!acc) return
     setEmail(acc.email)
+    setPassword("super123")
     setIsPendingApproval(false)
     setError(null)
-
-    if (key === "SUPER_ADMIN") setPassword("super123")
-    else if (key === "ADMIN") setPassword("admin123")
-    else if (key === "COORDINATOR" || key === "HOD") setPassword("faculty123")
-    else setPassword("student123")
   }
 
   return (
@@ -149,51 +101,33 @@ function LoginForm() {
         </div>
       )}
 
-      {/* Structured Persona Selector Bar */}
-      <div className="p-3 rounded-xl border border-border bg-card space-y-2.5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-            Evaluation Personas
-          </span>
-          <span className="text-[10px] text-muted-foreground font-medium">Click role to prefill</span>
+      {/* Demo Super Admin Access Banner */}
+      <div className="p-3 rounded-xl border border-primary/25 bg-primary/5 shadow-xs flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="size-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+            <ShieldAlert className="size-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-foreground">Demo Super Admin</span>
+              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-primary/15 text-primary border border-primary/25">ROOT</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground truncate">
+              superadmin@nexora.edu • Grid Controller
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-          {PERSONA_CONFIGS.map((persona) => {
-            const Icon = persona.icon
-            const isSelected = selectedPersona === persona.key
-            return (
-              <button
-                key={persona.key}
-                type="button"
-                onClick={() => handlePersonaSelect(persona.key)}
-                className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                  isSelected
-                    ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-                    : "border-border bg-muted/20 hover:bg-muted/50"
-                }`}
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <Icon className={`h-3.5 w-3.5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
-                  {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
-                </div>
-                <div>
-                  <span className="text-[11px] font-bold block leading-tight text-foreground">
-                    {persona.label}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground block truncate">
-                    {persona.sublabel}
-                  </span>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-
-        <p className="text-[11px] text-muted-foreground/90 border-t border-border/60 pt-2 px-0.5">
-          {PERSONA_CONFIGS.find((p) => p.key === selectedPersona)?.desc}
-        </p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={fillSuperAdmin}
+          className="h-7 px-2.5 text-xs font-medium border-primary/30 text-primary hover:bg-primary/10 shrink-0 gap-1"
+        >
+          <Sparkles className="size-3" />
+          <span>Prefill Demo</span>
+        </Button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -45,7 +45,7 @@ messageRouter.get('/:conversationId', authenticate, async (req: Request, res: Re
     }
 
     const messages = await Message.find({ conversationId: new Types.ObjectId(conversationId) })
-      .populate('senderId', 'name role avatarUrl department')
+      .populate('senderId', 'name role facultyRole avatarUrl department')
       .sort({ createdAt: 1 })
       .limit(limit)
       .lean();
@@ -57,6 +57,7 @@ messageRouter.get('/:conversationId', authenticate, async (req: Request, res: Re
         id: m.senderId?._id?.toString() || '',
         name: m.senderId?.name || 'Unknown',
         role: m.senderId?.role || 'STUDENT',
+        facultyRole: m.senderId?.facultyRole,
         avatarUrl: m.senderId?.avatarUrl,
         department: m.senderId?.department,
       },
@@ -138,7 +139,7 @@ messageRouter.post('/:conversationId', authenticate, async (req: Request, res: R
     await conversation.save();
 
     const populated = await Message.findById(message._id)
-      .populate('senderId', 'name role avatarUrl department')
+      .populate('senderId', 'name role facultyRole avatarUrl department')
       .lean();
 
     const dto = {
@@ -148,6 +149,7 @@ messageRouter.post('/:conversationId', authenticate, async (req: Request, res: R
         id: (populated!.senderId as any)?._id?.toString() || user.id,
         name: (populated!.senderId as any)?.name || user.name,
         role: (populated!.senderId as any)?.role || user.role,
+        facultyRole: (populated!.senderId as any)?.facultyRole || user.facultyRole,
         avatarUrl: (populated!.senderId as any)?.avatarUrl || user.avatarUrl,
         department: (populated!.senderId as any)?.department || user.department,
       },

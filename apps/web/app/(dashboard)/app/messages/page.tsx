@@ -12,6 +12,7 @@ import {
   MessageAttachment,
   DMPermission,
   Role,
+  FacultyRole,
 } from "@nexora/types"
 import {
   MessageSquare,
@@ -62,6 +63,7 @@ interface DirectoryUser {
   id: string
   name: string
   role: Role
+  facultyRole?: FacultyRole
   department: string
   academicYear?: string
   semester?: string
@@ -102,13 +104,15 @@ export default function MessagesPage() {
   const [typingUsers, setTypingUsers] = React.useState<{ [key: string]: string }>({})
   const [showDetailsDrawer, setShowDetailsDrawer] = React.useState(false)
 
-  // Modals
+  // Modals & Actions
   const [showNewDmModal, setShowNewDmModal] = React.useState(false)
   const [showReportModal, setShowReportModal] = React.useState(false)
   const [showPrivacyModal, setShowPrivacyModal] = React.useState(false)
   const [showNewGroupModal, setShowNewGroupModal] = React.useState(false)
   const [showInviteModal, setShowInviteModal] = React.useState(false)
   const [showNewChannelModal, setShowNewChannelModal] = React.useState(false)
+  const [unsendTargetId, setUnsendTargetId] = React.useState<string | null>(null)
+  const [isUnsending, setIsUnsending] = React.useState(false)
 
   // Channel creation state (Faculty & Admin)
   const [channelName, setChannelName] = React.useState("")
@@ -627,8 +631,7 @@ export default function MessagesPage() {
   // Unsend message
   const handleUnsendMessage = async (messageId: string) => {
     if (!selectedConversation) return
-    const confirmUnsend = window.confirm("Are you sure you want to unsend this message for everyone?")
-    if (!confirmUnsend) return
+    setIsUnsending(true)
 
     try {
       const token = localStorage.getItem("nexora_token")
@@ -649,12 +652,14 @@ export default function MessagesPage() {
           )
         )
       } else {
-        const err = await res.json()
-        alert(err.error || "Failed to unsend message")
+        const err = await res.json().catch(() => ({}))
+        console.error("Unsend message error:", err)
       }
     } catch (err) {
       console.warn("Unsend message error:", err)
-      alert("Network error: Failed to unsend message")
+    } finally {
+      setIsUnsending(false)
+      setUnsendTargetId(null)
     }
   }
 
@@ -1389,7 +1394,7 @@ export default function MessagesPage() {
       : null
 
   return (
-    <div className="flex h-[calc(100vh-4.25rem)] overflow-hidden bg-background">
+    <div className="flex h-[calc(100dvh-4.25rem)] overflow-hidden bg-background">
       {/* ================= COLUMN 1: SIDEBAR GRID ================= */}
       <div className={cn("w-full md:w-80 shrink-0 border-r border-border flex flex-col bg-card/40 min-w-0 max-w-full", (selectedConversation || activeTab === "EXPLORE") ? "hidden md:flex" : "flex")}>
         {/* Header */}
@@ -2368,7 +2373,21 @@ export default function MessagesPage() {
               ) : (
                 messages.map((msg, idx) => {
                   const isMe = msg.sender.id === user?.id
-                  const isStaff = ["FACULTY", "ADMIN", "SUPER_ADMIN"].includes(msg.sender.role)
+                  const senderRole = (isMe && user?.role) ? user.role : (msg.sender.role || "STUDENT")
+                  const facultyRole = (isMe && user?.facultyRole) ? user.facultyRole : (msg.sender as any)?.facultyRole
+                  const isStaff = ["FACULTY", "ADMIN", "SUPER_ADMIN"].includes(senderRole)
+
+                  let roleBadgeText = senderRole
+                  if (senderRole === "FACULTY") {
+                    if (facultyRole === "HOD") roleBadgeText = "HoD"
+                    else if (facultyRole === "CLASS_COORDINATOR") roleBadgeText = "Class Coordinator"
+                    else if (facultyRole) roleBadgeText = facultyRole.replace(/_/g, " ")
+                    else roleBadgeText = "Faculty"
+                  } else if (senderRole === "SUPER_ADMIN") {
+                    roleBadgeText = "Super Admin"
+                  } else if (senderRole === "ADMIN") {
+                    roleBadgeText = "Campus Admin"
+                  }
 
                   return (
                     <div
@@ -2376,7 +2395,13 @@ export default function MessagesPage() {
                       className={`flex gap-3 group ${isMe ? "justify-end" : "justify-start"}`}
                     >
                       {!isMe && (
-                        <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center text-foreground font-semibold text-xs shrink-0 mt-0.5">
+                        <div
+                          className={`size-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 ${
+                            isStaff
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                              : "bg-muted border-border text-foreground font-semibold"
+                          }`}
+                        >
                           {msg.sender.name.substring(0, 2).toUpperCase()}
                         </div>
                       )}
@@ -2387,8 +2412,8 @@ export default function MessagesPage() {
                           {isMe && !msg.isUnsent && (
                             <button
                               type="button"
-                              onClick={() => handleUnsendMessage(msg.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-muted-foreground hover:text-rose-500 flex items-center gap-1 font-medium px-1.5 py-0.5 rounded hover:bg-rose-500/10 mr-1"
+                              onClick={() => setUnsendTargetId(msg.id)}
+                              className="opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-[10px] text-muted-foreground hover:text-rose-500 active:text-rose-600 flex items-center gap-1 font-medium px-2 py-0.5 rounded bg-muted/70 sm:bg-transparent hover:bg-rose-500/10 mr-1 touch-manipulation cursor-pointer shrink-0"
                               title="Unsend message for everyone"
                             >
                               <Undo2 className="size-3" />
@@ -2397,8 +2422,17 @@ export default function MessagesPage() {
                           )}
                           <span className="font-semibold text-foreground">{msg.sender.name}</span>
                           {isStaff && (
-                            <Badge variant="secondary" className="text-[9px] h-3.5 px-1 py-0 font-bold">
-                              {msg.sender.role}
+                            <Badge
+                              variant="secondary"
+                              className={`text-[9px] h-3.5 px-1.5 py-0 font-bold uppercase tracking-wider ${
+                                senderRole === "FACULTY"
+                                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25"
+                                  : senderRole === "SUPER_ADMIN"
+                                  ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/25"
+                                  : "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25"
+                              }`}
+                            >
+                              {roleBadgeText}
                             </Badge>
                           )}
                           <span className="text-muted-foreground text-[10px]">
@@ -3004,6 +3038,49 @@ export default function MessagesPage() {
                 className="h-8 text-xs font-semibold"
               >
                 {isCreatingDm ? "Connecting..." : "Send Request"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: UNSEND MESSAGE ================= */}
+      {unsendTargetId && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-card border border-border rounded-xl shadow-2xl p-4 sm:p-5 space-y-3.5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-2.5 text-rose-500">
+              <div className="size-8 rounded-lg bg-rose-500/10 flex items-center justify-center shrink-0">
+                <Undo2 className="size-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Unsend Message?</h3>
+                <p className="text-[11px] text-muted-foreground">Action affects everyone in chat</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              This message will be removed for everyone in this conversation. Message text and attachments cannot be recovered.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setUnsendTargetId(null)}
+                disabled={isUnsending}
+                className="h-8 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => unsendTargetId && handleUnsendMessage(unsendTargetId)}
+                disabled={isUnsending}
+                className="h-8 text-xs font-semibold gap-1.5 shadow-sm"
+              >
+                <Undo2 className="size-3.5" />
+                <span>{isUnsending ? "Unsending..." : "Unsend for Everyone"}</span>
               </Button>
             </div>
           </div>

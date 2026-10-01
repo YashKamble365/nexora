@@ -75,15 +75,15 @@ conversationRouter.get('/', authenticate, async (req: Request, res: Response): P
     };
 
     const conversations = await Conversation.find(query)
-      .populate('participants', 'name email role department academicYear avatarUrl isOnline institutionalId')
-      .populate('pendingInvites', 'name email role department academicYear avatarUrl isOnline institutionalId')
-      .populate('joinRequests', 'name email role department academicYear avatarUrl isOnline institutionalId')
+      .populate('participants', 'name email role facultyRole department academicYear avatarUrl isOnline institutionalId')
+      .populate('pendingInvites', 'name email role facultyRole department academicYear avatarUrl isOnline institutionalId')
+      .populate('joinRequests', 'name email role facultyRole department academicYear avatarUrl isOnline institutionalId')
       .populate('creatorId', 'name role department avatarUrl')
       .populate({
         path: 'lastMessage',
         populate: {
           path: 'senderId',
-          select: 'name role avatarUrl',
+          select: 'name role facultyRole avatarUrl',
         },
       })
       .sort({ updatedAt: -1 })
@@ -123,6 +123,7 @@ conversationRouter.get('/', authenticate, async (req: Request, res: Response): P
           name: p.name,
           email: p.email,
           role: p.role,
+          facultyRole: p.facultyRole,
           department: p.department,
           academicYear: p.academicYear,
           avatarUrl: p.avatarUrl,
@@ -208,12 +209,12 @@ conversationRouter.get(['/requests', '/requests/sent'], authenticate, async (req
     }
 
     const requests = await Conversation.find(query)
-      .populate('participants', 'name email role department academicYear avatarUrl isOnline institutionalId')
+      .populate('participants', 'name email role facultyRole department academicYear avatarUrl isOnline institutionalId')
       .populate({
         path: 'lastMessage',
         populate: {
           path: 'senderId',
-          select: 'name role avatarUrl department',
+          select: 'name role facultyRole avatarUrl department',
         },
       })
       .sort({ updatedAt: -1 })
@@ -233,6 +234,7 @@ conversationRouter.get(['/requests', '/requests/sent'], authenticate, async (req
               id: otherPerson._id.toString(),
               name: otherPerson.name,
               role: otherPerson.role,
+              facultyRole: otherPerson.facultyRole,
               department: otherPerson.department,
               academicYear: otherPerson.academicYear,
               institutionalId: otherPerson.institutionalId,
@@ -570,7 +572,7 @@ conversationRouter.post('/channels', authenticate, async (req: Request, res: Res
     });
 
     const populated = await Conversation.findById(channel._id)
-      .populate('participants', 'name email role department academicYear avatarUrl isOnline institutionalId')
+      .populate('participants', 'name email role facultyRole department academicYear avatarUrl isOnline institutionalId')
       .populate('creatorId', 'name role department avatarUrl')
       .lean();
 
@@ -592,6 +594,7 @@ conversationRouter.post('/channels', authenticate, async (req: Request, res: Res
         name: p.name,
         email: p.email,
         role: p.role,
+        facultyRole: p.facultyRole,
         department: p.department,
         academicYear: p.academicYear,
         avatarUrl: p.avatarUrl,

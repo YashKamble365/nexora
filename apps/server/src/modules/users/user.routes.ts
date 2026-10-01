@@ -141,7 +141,7 @@ userRouter.get('/directory', authenticate, async (req: Request, res: Response): 
     }
 
     const users = await User.find(query)
-      .select('name role department academicYear semester institutionalId avatarUrl isOnline privacySettings profileVisibility')
+      .select('name role facultyRole department academicYear semester institutionalId avatarUrl isOnline privacySettings profileVisibility')
       .limit(60)
       .lean();
 
@@ -149,6 +149,7 @@ userRouter.get('/directory', authenticate, async (req: Request, res: Response): 
       id: u._id.toString(),
       name: u.name,
       role: u.role,
+      facultyRole: u.facultyRole,
       department: u.department,
       academicYear: u.academicYear,
       semester: u.semester,

@@ -22,10 +22,6 @@ export function getApiBase(): string {
 export const API_BASE = getApiBase();
 
 export const DEMO_CREDENTIALS: Record<string, { email: string; password: string }> = {
-  STUDENT: { email: "prathamesh.patange@prpcem.edu", password: "student123" },
-  COORDINATOR: { email: "pr.maskare@prpcem.edu", password: "faculty123" },
-  HOD: { email: "atul.raut@prpcem.edu", password: "faculty123" },
-  ADMIN: { email: "admin@prpcem.edu", password: "admin123" },
   SUPER_ADMIN: { email: "superadmin@nexora.edu", password: "super123" },
 }
 
@@ -35,46 +31,29 @@ export async function obtainToken(): Promise<string | null> {
   if (existing) return existing
 
   try {
-    let email = DEMO_CREDENTIALS.STUDENT.email
-    let password = DEMO_CREDENTIALS.STUDENT.password
-
     const storedUser = localStorage.getItem("nexora_user")
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser)
-        if (parsed.role === "ADMIN") {
-          email = DEMO_CREDENTIALS.ADMIN.email
-          password = DEMO_CREDENTIALS.ADMIN.password
-        } else if (parsed.role === "SUPER_ADMIN") {
-          email = DEMO_CREDENTIALS.SUPER_ADMIN.email
-          password = DEMO_CREDENTIALS.SUPER_ADMIN.password
-        } else if (parsed.facultyRole === "CLASS_COORDINATOR") {
-          email = DEMO_CREDENTIALS.COORDINATOR.email
-          password = DEMO_CREDENTIALS.COORDINATOR.password
-        } else if (parsed.facultyRole === "HOD") {
-          email = DEMO_CREDENTIALS.HOD.email
-          password = DEMO_CREDENTIALS.HOD.password
-        } else if (parsed.email) {
-          email = parsed.email
+        if (parsed.role === "SUPER_ADMIN" || parsed.email === DEMO_CREDENTIALS.SUPER_ADMIN.email) {
+          const base = getApiBase()
+          const res = await fetch(`${base}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(DEMO_CREDENTIALS.SUPER_ADMIN),
+          })
+
+          if (res.ok) {
+            const data = await res.json()
+            if (data.token) {
+              localStorage.setItem("nexora_token", data.token)
+              document.cookie = `nexora_token=${data.token}; path=/; max-age=604800`
+              return data.token
+            }
+          }
         }
       } catch {
-        // use default student
-      }
-    }
-
-    const base = getApiBase()
-    const res = await fetch(`${base}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    })
-
-    if (res.ok) {
-      const data = await res.json()
-      if (data.token) {
-        localStorage.setItem("nexora_token", data.token)
-        document.cookie = `nexora_token=${data.token}; path=/; max-age=604800`
-        return data.token
+        // ignore parse error
       }
     }
   } catch {

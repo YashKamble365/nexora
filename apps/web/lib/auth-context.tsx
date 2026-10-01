@@ -15,74 +15,6 @@ export interface ExtendedUserDTO extends UserDTO {
 }
 
 export const DEMO_ACCOUNTS: Record<string, ExtendedUserDTO> = {
-  STUDENT: {
-    id: "usr_student_1",
-    name: "Prathamesh Patange",
-    email: "prathamesh.patange@prpcem.edu",
-    role: "STUDENT",
-    status: "ACTIVE",
-    institutionalId: "26-CSE-014",
-    department: "Computer Science & Engineering",
-    academicYear: "Final Year",
-    instituteId: "6abb8acb449cedc939683481",
-    instituteName: "P. R. Pote Patil College of Engineering and Management",
-    instituteCode: "PRPCEM",
-    bio: "Lead coordinator for Community Engagement Project.",
-    isOnline: true,
-    createdAt: "2026-09-01T00:00:00Z",
-    updatedAt: "2026-09-29T00:00:00Z",
-  },
-  COORDINATOR: {
-    id: "usr_coord_1",
-    name: "Prof. P. R. Maskare",
-    email: "pr.maskare@prpcem.edu",
-    role: "FACULTY",
-    facultyRole: "CLASS_COORDINATOR",
-    coordinatorYear: "Final Year",
-    status: "ACTIVE",
-    institutionalId: "EMP-CSE-012",
-    department: "Computer Science & Engineering",
-    instituteId: "6abb8acb449cedc939683481",
-    instituteName: "P. R. Pote Patil College of Engineering and Management",
-    instituteCode: "PRPCEM",
-    bio: "Final Year Class Coordinator & Lab In-charge.",
-    isOnline: true,
-    createdAt: "2026-01-15T00:00:00Z",
-    updatedAt: "2026-09-29T00:00:00Z",
-  },
-  HOD: {
-    id: "usr_hod_1",
-    name: "Dr. Atul D. Raut",
-    email: "atul.raut@prpcem.edu",
-    role: "FACULTY",
-    facultyRole: "HOD",
-    status: "ACTIVE",
-    institutionalId: "EMP-CSE-001",
-    department: "Computer Science & Engineering",
-    instituteId: "6abb8acb449cedc939683481",
-    instituteName: "P. R. Pote Patil College of Engineering and Management",
-    instituteCode: "PRPCEM",
-    bio: "Head of Department & Project Guide.",
-    isOnline: true,
-    createdAt: "2025-06-01T00:00:00Z",
-    updatedAt: "2026-09-29T00:00:00Z",
-  },
-  ADMIN: {
-    id: "usr_admin_1",
-    name: "Dean Administration",
-    email: "admin@prpcem.edu",
-    role: "ADMIN",
-    status: "ACTIVE",
-    institutionalId: "ADM-PRPCEM-01",
-    department: "Institutional Administration",
-    instituteId: "6abb8acb449cedc939683481",
-    instituteName: "P. R. Pote Patil College of Engineering and Management",
-    instituteCode: "PRPCEM",
-    bio: "Campus administrative controller and security oversight.",
-    isOnline: true,
-    createdAt: "2025-06-01T00:00:00Z",
-    updatedAt: "2026-09-29T00:00:00Z",
-  },
   SUPER_ADMIN: {
     id: "usr_super_1",
     name: "Nexora Platform Controller",
@@ -96,32 +28,10 @@ export const DEMO_ACCOUNTS: Record<string, ExtendedUserDTO> = {
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2026-09-29T00:00:00Z",
   },
-  COEP_STUDENT: {
-    id: "usr_coep_1",
-    name: "Aditya Deshmukh",
-    email: "aditya.deshmukh@coep.ac.in",
-    role: "STUDENT",
-    status: "ACTIVE",
-    institutionalId: "24-CE-089",
-    department: "Computer Engineering",
-    academicYear: "Third Year",
-    instituteId: "6abb8acb449cedc939683482",
-    instituteName: "COEP Technological University",
-    instituteCode: "COEP",
-    bio: "Robotics and Embedded Systems club lead.",
-    isOnline: true,
-    createdAt: "2026-02-10T00:00:00Z",
-    updatedAt: "2026-09-29T00:00:00Z",
-  },
 }
 
 export const DEMO_PASSWORDS: Record<string, string> = {
-  STUDENT: "student123",
-  COORDINATOR: "faculty123",
-  HOD: "faculty123",
-  ADMIN: "admin123",
   SUPER_ADMIN: "super123",
-  COEP_STUDENT: "student123",
 }
 
 interface AuthContextType {
@@ -138,7 +48,7 @@ const AuthContext = React.createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   // Identical initial state on both SSR and client initial render to avoid hydration mismatch
-  const [user, setUser] = React.useState<ExtendedUserDTO | null>(DEMO_ACCOUNTS.STUDENT)
+  const [user, setUser] = React.useState<ExtendedUserDTO | null>(null)
   const [isLoading, setIsLoading] = React.useState(false)
 
   React.useEffect(() => {
@@ -170,20 +80,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.cookie = `nexora_authenticated=true; path=/; max-age=604800`
     }
   }, [user])
-
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("nexora_token")
-      if (!token && user?.email) {
-        const entry = Object.entries(DEMO_ACCOUNTS).find(
-          ([_, acc]) => acc.email.toLowerCase() === user.email.toLowerCase()
-        )
-        const roleKey = entry ? entry[0] : "STUDENT"
-        const pwd = DEMO_PASSWORDS[roleKey] || "student123"
-        login(user.email, pwd).catch(() => {})
-      }
-    }
-  }, [])
 
   const setAuthenticatedUser = (newUser: ExtendedUserDTO | null) => {
     if (newUser) {
@@ -276,9 +172,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/auth/login")
   }
 
-  const switchDemoRole = async (key: string) => {
-    const account = DEMO_ACCOUNTS[key] || DEMO_ACCOUNTS.STUDENT
-    const password = DEMO_PASSWORDS[key] || "student123"
+  const switchDemoRole = async (key: string = "SUPER_ADMIN") => {
+    const account = DEMO_ACCOUNTS[key] || DEMO_ACCOUNTS.SUPER_ADMIN
+    const password = DEMO_PASSWORDS[key] || "super123"
     try {
       await login(account.email, password)
     } catch {
