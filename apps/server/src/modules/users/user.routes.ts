@@ -139,6 +139,18 @@ userRouter.get('/directory', authenticate, async (req: Request, res: Response): 
       query.role = role;
     }
 
+    // Exclude SUPER_ADMIN from student and faculty directory discovery
+    if (user.role === 'STUDENT' || user.role === 'FACULTY') {
+      if (query.role) {
+        if (query.role === 'SUPER_ADMIN') {
+          res.json([]);
+          return;
+        }
+      } else {
+        query.role = { $ne: 'SUPER_ADMIN' };
+      }
+    }
+
     if (academicYear && academicYear !== 'ALL') {
       query.academicYear = academicYear;
     }

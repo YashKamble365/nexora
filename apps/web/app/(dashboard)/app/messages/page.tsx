@@ -713,7 +713,7 @@ export default function MessagesPage() {
 
       const data = await res.json()
       if (!res.ok) {
-        setDmError(data.error || "Unable to send direct message")
+        setDmError(data.message || data.error || "Unable to send direct message")
         return
       }
 

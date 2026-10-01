@@ -38,41 +38,44 @@ conversationRouter.get('/', authenticate, async (req: Request, res: Response): P
     //    - BATCH matching user's department and academicYear (if student) or if faculty in that dept
     //    - CUSTOM where user is in participants
     // B) Direct conversations where user is participant and status is ACTIVE
-    const query: any = {
-      instituteId,
-      $or: [
-        {
-          type: 'CHANNEL',
+    const query: any = user.role === 'SUPER_ADMIN'
+      ? {
           $or: [
-            { scope: 'CAMPUS' },
-            { scope: 'DEPARTMENT', department: user.department },
-            ...(user.academicYear
-              ? [{ scope: 'BATCH', department: user.department, academicYear: user.academicYear }]
-              : [{ scope: 'BATCH', department: user.department }]),
-            ...(user.academicYear
-              ? [
-                  {
-                    scope: 'SUBJECT',
-                    department: user.department,
-                    academicYear: user.academicYear,
-                    ...(user.semester ? { semester: user.semester } : {}),
-                  },
-                ]
-              : []),
-            ...(user.role === 'FACULTY'
-              ? [{ scope: 'SUBJECT', creatorId: userId }, { scope: 'SUBJECT', department: user.department }]
-              : []),
-            { scope: 'CUSTOM', participants: userId },
-            { participants: userId },
+            { type: 'DIRECT', participants: userId, status: 'ACTIVE' },
+            ...(instituteId ? [{ instituteId, type: 'CHANNEL' }] : []),
           ],
-        },
-        {
-          type: 'DIRECT',
-          participants: userId,
-          status: 'ACTIVE',
-        },
-      ],
-    };
+        }
+      : {
+          $or: [
+            { type: 'DIRECT', participants: userId, status: 'ACTIVE' },
+            {
+              instituteId,
+              type: 'CHANNEL',
+              $or: [
+                { scope: 'CAMPUS' },
+                { scope: 'DEPARTMENT', department: user.department },
+                ...(user.academicYear
+                  ? [{ scope: 'BATCH', department: user.department, academicYear: user.academicYear }]
+                  : [{ scope: 'BATCH', department: user.department }]),
+                ...(user.academicYear
+                  ? [
+                      {
+                        scope: 'SUBJECT',
+                        department: user.department,
+                        academicYear: user.academicYear,
+                        ...(user.semester ? { semester: user.semester } : {}),
+                      },
+                    ]
+                  : []),
+                ...(user.role === 'FACULTY'
+                  ? [{ scope: 'SUBJECT', creatorId: userId }, { scope: 'SUBJECT', department: user.department }]
+                  : []),
+                { scope: 'CUSTOM', participants: userId },
+                { participants: userId },
+              ],
+            },
+          ],
+        };
 
     const conversations = await Conversation.find(query)
       .populate('participants', 'name email role facultyRole department academicYear avatarUrl isOnline institutionalId')
@@ -286,7 +289,7 @@ conversationRouter.get(['/requests', '/requests/sent'], authenticate, async (req
 conversationRouter.post('/dm', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const sender = req.user;
-    if (!sender || !sender.instituteId) {
+    if (!sender || (!sender.instituteId && sender.role !== 'SUPER_ADMIN')) {
       res.status(401).json({ error: 'Authentication required' });
       return;
     }
@@ -309,10 +312,25 @@ conversationRouter.post('/dm', authenticate, async (req: Request, res: Response)
       return;
     }
 
-    // Must belong to same institute
-    if (recipient.instituteId?.toString() !== sender.instituteId) {
-      res.status(403).json({ error: 'Cannot message users outside your institute' });
-      return;
+    // RULE 1: If recipient is SUPER_ADMIN, only Campus Admins (ADMIN) or root (SUPER_ADMIN) can message them.
+    if (recipient.role === 'SUPER_ADMIN') {
+      if (sender.role !== 'ADMIN' && sender.role !== 'SUPER_ADMIN') {
+        res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Only Campus Administrators can initiate direct messages with Super Admin.',
+        });
+        return;
+      }
+    }
+
+    // RULE 2: If neither party is SUPER_ADMIN, both users must belong to same institute.
+    if (sender.role !== 'SUPER_ADMIN' && recipient.role !== 'SUPER_ADMIN') {
+      const senderInstId = sender.instituteId?.toString();
+      const recipientInstId = recipient.instituteId?.toString();
+      if (!senderInstId || !recipientInstId || senderInstId !== recipientInstId) {
+        res.status(403).json({ error: 'Cannot message users outside your institute' });
+        return;
+      }
     }
 
     const recipientPrivacy = recipient.privacySettings?.dmPermission || 'ALLOW_ALL';
@@ -340,28 +358,38 @@ conversationRouter.post('/dm', authenticate, async (req: Request, res: Response)
     const senderObjId = new Types.ObjectId(sender.id);
     const recipientObjId = new Types.ObjectId(recipientId);
 
-    let conversation = await Conversation.findOne({
+    const existing = await Conversation.findOne({
       type: 'DIRECT',
       participants: { $all: [senderObjId, recipientObjId], $size: 2 },
     });
 
-    if (conversation) {
+    if (existing) {
       // If blocked or declined
-      if (conversation.status === 'BLOCKED') {
+      if (existing.status === 'BLOCKED') {
         res.status(403).json({ error: 'Communication with this user is currently blocked.' });
         return;
       }
-      res.json({ id: conversation._id.toString(), status: conversation.status, isNew: false });
+      res.json({ id: existing._id.toString(), status: existing.status, isNew: false });
       return;
     }
 
-    // If either party is Faculty/Admin, conversation starts immediately as ACTIVE.
-    // If student to student, starts as REQUEST_PENDING to give recipient consent choice.
+    // Resolve instituteId for conversation
+    let convInstId: Types.ObjectId;
+    if (sender.instituteId) {
+      convInstId = new Types.ObjectId(sender.instituteId);
+    } else if (recipient.instituteId) {
+      convInstId = new Types.ObjectId(recipient.instituteId.toString());
+    } else {
+      const anyInst = (await Institute.findOne({ status: 'APPROVED' })) || (await Institute.findOne());
+      convInstId = (anyInst?._id as Types.ObjectId) || new Types.ObjectId();
+    }
+
+    // If either party is Faculty/Admin/SuperAdmin, conversation starts immediately as ACTIVE.
     const initialStatus = isSenderStaff || isRecipientStaff ? 'ACTIVE' : 'REQUEST_PENDING';
 
-    conversation = await Conversation.create({
+    const conversation: any = await Conversation.create({
       type: 'DIRECT',
-      instituteId: new Types.ObjectId(sender.instituteId),
+      instituteId: convInstId,
       participants: [senderObjId, recipientObjId],
       status: initialStatus,
       initiatedBy: senderObjId,

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import {
   CheckCircle2,
   XCircle,
@@ -40,16 +41,12 @@ export default function ApprovalsPage() {
     setLoading(true)
     try {
       if (isSuperAdmin) {
-        // Super Admin manages both college accreditation AND platform-wide user verification
-        const [instData, userData] = await Promise.all([
-          apiClient.get<{ institutes: InstituteDTO[] }>("/institutes/all").catch(() => ({ institutes: [] })),
-          apiClient.get<{ pendingUsers: UserDTO[] }>("/approvals/pending").catch(() => ({ pendingUsers: [] })),
-        ])
+        // Super Admin oversees college accreditation queue
+        const instData = await apiClient.get<{ institutes: InstituteDTO[] }>("/institutes/all").catch(() => ({ institutes: [] }))
         const pending = (instData.institutes || []).filter(
           (i: InstituteDTO) => i.status === "PENDING_APPROVAL"
         )
         setPendingInstitutes(pending)
-        setPendingUsers(userData.pendingUsers || [])
       } else {
         // Campus Admins and HoDs manage student/faculty accounts for their college
         const userData = await apiClient.get<{ pendingUsers: UserDTO[] }>("/approvals/pending")
@@ -229,8 +226,29 @@ export default function ApprovalsPage() {
         </div>
       )}
 
-      {/* User Verification Section (Faculty & Students - Visible to Super Admin, Campus Admins & HoDs) */}
-      <div className="space-y-4">
+      {/* Super Admin: Campus Onboarding Delegation Notice */}
+      {isSuperAdmin && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3 shadow-xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-emerald-500" />
+              <h3 className="text-sm font-semibold text-foreground">Campus Onboarding & Verification Delegation</h3>
+            </div>
+            <Link href="/admin/users">
+              <Button size="sm" variant="outline" className="h-7 text-xs font-medium">
+                Open Global Users Directory
+              </Button>
+            </Link>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Institutional member verification (students & faculty) is strictly executed by registered Class Coordinators, Department HoDs, and Campus Administrators of each accredited college. Super Admin retains root global access control to suspend, reactivate, or delete any account across the grid at any time in the <strong>Global Users Directory</strong>.
+          </p>
+        </div>
+      )}
+
+      {/* User Verification Section (Faculty & Students - Visible to Campus Admins & HoDs) */}
+      {!isSuperAdmin && (
+        <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h2 className="text-base font-semibold tracking-tight flex items-center gap-2">
               <GraduationCap className="h-4 w-4 text-primary" />
@@ -269,7 +287,6 @@ export default function ApprovalsPage() {
                   <thead className="bg-muted/50 border-b border-border text-muted-foreground font-semibold">
                     <tr>
                       <th className="py-2.5 px-4">Applicant</th>
-                      {isSuperAdmin && <th className="py-2.5 px-4">College / Campus</th>}
                       <th className="py-2.5 px-4">Role & Designation</th>
                       <th className="py-2.5 px-4">Department & Year</th>
                       <th className="py-2.5 px-4">Institutional Roll / ID</th>
@@ -285,15 +302,6 @@ export default function ApprovalsPage() {
                             <div className="font-semibold text-foreground">{item.name}</div>
                             <div className="text-[11px] text-muted-foreground">{item.email}</div>
                           </td>
-
-                          {isSuperAdmin && (
-                            <td className="py-3 px-4">
-                              <div className="font-medium text-foreground">{item.instituteName || "Platform Wide"}</div>
-                              {item.instituteCode && (
-                                <span className="font-mono text-[10px] text-muted-foreground uppercase">{item.instituteCode}</span>
-                              )}
-                            </td>
-                          )}
 
                           <td className="py-3 px-4">
                             <Badge
@@ -361,6 +369,7 @@ export default function ApprovalsPage() {
             </div>
           )}
         </div>
+      )}
       </div>
   )
 }

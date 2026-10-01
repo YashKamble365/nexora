@@ -22,10 +22,12 @@ router.get('/pending', authenticate, requireRole('FACULTY', 'ADMIN', 'SUPER_ADMI
     let filter: Record<string, unknown> = { status: 'PENDING' };
 
     if (caller.role === 'SUPER_ADMIN') {
-      const { instituteId } = req.query;
-      if (instituteId && instituteId !== 'ALL' && Types.ObjectId.isValid(instituteId as string)) {
-        filter.instituteId = new Types.ObjectId(instituteId as string);
-      }
+      // Campus verifications (students & faculty) belong strictly to local Coordinators, HoDs, and Campus Admins
+      res.json({
+        pendingUsers: [],
+        message: 'Campus member onboarding verifications are handled by college coordinators and campus administrators.',
+      });
+      return;
     } else if (caller.role === 'ADMIN') {
       // Institute Admin sees all pending faculty & students in their institute
       filter = {
