@@ -116,6 +116,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password = "password123"): Promise<boolean> => {
     setIsLoading(true)
 
+    // Clear stale credentials to prevent cross-account token pollution
+    localStorage.removeItem("nexora_token")
+    localStorage.removeItem("nexora_user")
+    document.cookie = "nexora_token=; path=/; max-age=0"
+    document.cookie = "nexora_role=; path=/; max-age=0"
+    document.cookie = "nexora_authenticated=; path=/; max-age=0"
+
     try {
       const base = getApiBase()
       const res = await fetch(`${base}/auth/login`, {
@@ -145,12 +152,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthenticatedUser(data.user)
       return true
     } catch (err: unknown) {
-      // If server unreachable, fallback to demo accounts for smooth DX
-      const matchedDemo = Object.values(DEMO_ACCOUNTS).find((d) => d.email.toLowerCase() === email.toLowerCase())
-      if (matchedDemo) {
-        setAuthenticatedUser(matchedDemo)
-        return true
-      }
       throw err
     } finally {
       setIsLoading(false)
@@ -175,11 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const switchDemoRole = async (key: string = "SUPER_ADMIN") => {
     const account = DEMO_ACCOUNTS[key] || DEMO_ACCOUNTS.SUPER_ADMIN
     const password = DEMO_PASSWORDS[key] || "super123"
-    try {
-      await login(account.email, password)
-    } catch {
-      setAuthenticatedUser(account)
-    }
+    await login(account.email, password)
     if (account.role === "ADMIN" || account.role === "SUPER_ADMIN") {
       router.push("/admin/dashboard")
     } else {

@@ -77,7 +77,7 @@ function issueToken(res: Response, user: any) {
   res.cookie('nexora_token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/',
   });
@@ -332,6 +332,12 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 
 // POST /api/auth/logout
 router.post('/logout', async (req: Request, res: Response) => {
+  res.clearCookie('nexora_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
+  });
   res.clearCookie('nexora_token', { path: '/' });
   res.json({ message: 'Logged out successfully' });
 });

@@ -105,13 +105,7 @@ interface NavSection {
 
 export function AppShell({
   children,
-  user = {
-    id: "usr_demo",
-    name: "Alex Johnson",
-    email: "alex.johnson@prpcem.edu",
-    role: "STUDENT",
-    department: "Computer Science",
-  },
+  user: propUser,
   unreadCounts = {},
   hasActiveEmergency = false,
   emergencyAlert = null,
@@ -120,6 +114,35 @@ export function AppShell({
   const [collapsed, setCollapsed] = React.useState(false)
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [commandOpen, setCommandOpen] = React.useState(false)
+
+  // Use propUser, or eagerly hydrate from localStorage on client to prevent flash of wrong role
+  const [user, setUser] = React.useState<AppShellUser>(() => {
+    if (propUser) return propUser
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("nexora_user")
+        if (stored) return JSON.parse(stored) as AppShellUser
+      } catch {}
+    }
+    return {
+      id: "usr_active",
+      name: "Campus User",
+      email: "",
+      role: "STUDENT",
+      department: "Campus Grid",
+    }
+  })
+
+  React.useEffect(() => {
+    if (propUser) {
+      setUser(propUser)
+    } else if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("nexora_user")
+        if (stored) setUser(JSON.parse(stored) as AppShellUser)
+      } catch {}
+    }
+  }, [propUser])
 
   const isSuperAdmin = user.role === "SUPER_ADMIN"
   const isAdmin = user.role === "ADMIN"

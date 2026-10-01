@@ -25,40 +25,90 @@ export const DEMO_CREDENTIALS: Record<string, { email: string; password: string 
   SUPER_ADMIN: { email: "superadmin@nexora.edu", password: "super123" },
 }
 
+export function parseJwtPayload(token: string): any {
+  try {
+    const parts = token.split(".")
+    if (parts.length < 2) return null
+    const base64Url = parts[1]
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    )
+    return JSON.parse(jsonPayload)
+  } catch {
+    return null
+  }
+}
+
+export function getValidToken(): string | null {
+  if (typeof window === "undefined") return null
+  const existing = localStorage.getItem("nexora_token")
+  if (!existing) return null
+
+  const payload = parseJwtPayload(existing)
+  if (!payload) {
+    localStorage.removeItem("nexora_token")
+    document.cookie = "nexora_token=; path=/; max-age=0"
+    return null
+  }
+
+  if (payload.exp && payload.exp < Date.now() / 1000) {
+    localStorage.removeItem("nexora_token")
+    document.cookie = "nexora_token=; path=/; max-age=0"
+    return null
+  }
+
+  const storedUserStr = localStorage.getItem("nexora_user")
+  if (storedUserStr) {
+    try {
+      const storedUser = JSON.parse(storedUserStr)
+      if (
+        (storedUser.email && payload.email && storedUser.email.toLowerCase() !== payload.email.toLowerCase()) ||
+        (storedUser.role && payload.role && storedUser.role !== payload.role)
+      ) {
+        localStorage.removeItem("nexora_token")
+        document.cookie = "nexora_token=; path=/; max-age=0"
+        return null
+      }
+    } catch {}
+  }
+
+  return existing
+}
+
 let obtainTokenPromise: Promise<string | null> | null = null
 
 export async function obtainToken(): Promise<string | null> {
   if (typeof window === "undefined") return null
-  const existing = localStorage.getItem("nexora_token")
-  if (existing) return existing
+  const valid = getValidToken()
+  if (valid) return valid
 
   if (obtainTokenPromise) return obtainTokenPromise
 
   obtainTokenPromise = (async () => {
     try {
-      const storedUser = localStorage.getItem("nexora_user")
-      if (storedUser) {
-        try {
-          const parsed = JSON.parse(storedUser)
-          if (parsed.role === "SUPER_ADMIN" || parsed.email === DEMO_CREDENTIALS.SUPER_ADMIN.email) {
-            const base = getApiBase()
-            const res = await fetch(`${base}/auth/login`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(DEMO_CREDENTIALS.SUPER_ADMIN),
-            })
+      const storedUserStr = localStorage.getItem("nexora_user")
+      if (storedUserStr) {
+        const storedUser = JSON.parse(storedUserStr)
+        if (storedUser.role === "SUPER_ADMIN" || storedUser.email === DEMO_CREDENTIALS.SUPER_ADMIN.email) {
+          const base = getApiBase()
+          const res = await fetch(`${base}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(DEMO_CREDENTIALS.SUPER_ADMIN),
+          })
 
-            if (res.ok) {
-              const data = await res.json()
-              if (data.token) {
-                localStorage.setItem("nexora_token", data.token)
-                document.cookie = `nexora_token=${data.token}; path=/; max-age=604800`
-                return data.token
-              }
+          if (res.ok) {
+            const data = await res.json()
+            if (data.token) {
+              localStorage.setItem("nexora_token", data.token)
+              document.cookie = `nexora_token=${data.token}; path=/; max-age=604800`
+              return data.token
             }
           }
-        } catch {
-          // ignore parse error
         }
       }
     } catch {
@@ -73,7 +123,7 @@ export async function obtainToken(): Promise<string | null> {
 }
 
 async function request<T>(endpoint: string, options: RequestInit = {}, isRetry = false): Promise<T> {
-  let token = typeof window !== "undefined" ? localStorage.getItem("nexora_token") : null
+  let token = getValidToken()
 
   if (!token && typeof window !== "undefined") {
     token = await obtainToken()
@@ -96,9 +146,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}, isRetry =
     headers,
   })
 
-  // Transparently retry once on 401 UNAUTHORIZED
-  if (response.status === 401 && !isRetry && typeof window !== "undefined") {
+  // Transparently retry once on 401 UNAUTHORIZED or 403 FORBIDDEN (stale/mismatched session)
+  if ((response.status === 401 || response.status === 403) && !isRetry && typeof window !== "undefined") {
     localStorage.removeItem("nexora_token")
+    document.cookie = "nexora_token=; path=/; max-age=0"
     const freshToken = await obtainToken()
     if (freshToken) {
       return request<T>(endpoint, options, true)

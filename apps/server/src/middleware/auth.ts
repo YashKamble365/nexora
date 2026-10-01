@@ -30,13 +30,24 @@ declare global {
 const getJwtSecret = () => process.env.JWT_SECRET || 'nexora-campus-jwt-secret-key-2026';
 
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
-  // Extract token from HTTP-only cookie, Bearer Authorization header, or query param
-  const token =
-    req.cookies?.nexora_token ||
-    (req.headers.authorization?.startsWith('Bearer ')
-      ? req.headers.authorization.substring(7)
-      : null) ||
-    (typeof req.query?.token === 'string' ? req.query.token : null);
+  // Prioritize Authorization Bearer header over cookies so active client tokens override stale browser cookies
+  let token: string | null = null;
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const raw = authHeader.substring(7).trim();
+    if (raw && raw !== 'null' && raw !== 'undefined') {
+      token = raw;
+    }
+  }
+
+  if (!token) {
+    if (req.cookies?.nexora_token && req.cookies.nexora_token !== 'null' && req.cookies.nexora_token !== 'undefined') {
+      token = req.cookies.nexora_token;
+    } else if (typeof req.query?.token === 'string' && req.query.token !== 'null' && req.query.token !== 'undefined') {
+      token = req.query.token;
+    }
+  }
 
   if (!token) {
     res.status(401).json({

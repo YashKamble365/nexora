@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { io, Socket } from "socket.io-client"
-import { obtainToken, getApiHost } from "@/lib/api"
+import { obtainToken, getApiHost, getValidToken } from "@/lib/api"
 
 let globalSocket: Socket | null = null
 let currentSocketToken: string | null = null
@@ -42,7 +42,7 @@ export function updateSocketAuthToken(token: string | null): Socket | null {
 export function getSocketInstance(forceToken?: string): Socket | null {
   if (typeof window === "undefined") return null
 
-  const token = forceToken || currentSocketToken || localStorage.getItem("nexora_token")
+  const token = forceToken || currentSocketToken || getValidToken()
   if (!token) {
     return null
   }

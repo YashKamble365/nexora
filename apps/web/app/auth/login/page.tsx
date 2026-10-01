@@ -46,7 +46,17 @@ function LoginForm() {
       }
 
       await login(email, password)
-      router.push(redirectUrl)
+      const stored = localStorage.getItem("nexora_user")
+      let target = redirectUrl
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored)
+          if ((parsed.role === "ADMIN" || parsed.role === "SUPER_ADMIN") && (redirectUrl === "/app" || redirectUrl === "/")) {
+            target = "/admin/dashboard"
+          }
+        } catch {}
+      }
+      router.push(target)
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message)
