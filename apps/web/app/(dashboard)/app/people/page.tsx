@@ -152,25 +152,16 @@ export default function PeoplePage() {
   const fetchPeople = React.useCallback(async () => {
     setIsLoading(true)
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("nexora_token") : null
       const params = new URLSearchParams()
       if (searchQuery.trim().length > 0) params.append("search", searchQuery.trim())
       if (departmentFilter !== "ALL") params.append("department", departmentFilter)
       if (activeTab !== "ALL") params.append("role", activeTab)
 
-      const res = await fetch(`${API_BASE}/api/users/directory?${params.toString()}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        credentials: "include",
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        setPeople(data)
-      }
+      const data = await apiClient.get<PersonDTO[]>(`/users/directory?${params.toString()}`)
+      setPeople(Array.isArray(data) ? data : [])
     } catch (err) {
       console.warn("Fetch people error:", err)
+      setPeople([])
     } finally {
       setIsLoading(false)
     }

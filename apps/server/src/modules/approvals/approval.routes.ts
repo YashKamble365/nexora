@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { z } from 'zod';
 import { User, IUserDocument } from '../users/user.model.js';
 import { Institute } from '../institutes/institute.model.js';
@@ -18,21 +19,14 @@ router.get('/pending', authenticate, requireRole('FACULTY', 'ADMIN', 'SUPER_ADMI
       return;
     }
 
-    if (caller.role === 'SUPER_ADMIN') {
-      // Super Admin verifies colleges at /api/institutes/all.
-      // Individual student/faculty verification belongs strictly to Campus Admin and HoDs.
-      res.json({
-        pendingUsers: [],
-        callerScope: {
-          role: caller.role,
-        },
-      });
-      return;
-    }
-    
     let filter: Record<string, unknown> = { status: 'PENDING' };
 
-    if (caller.role === 'ADMIN') {
+    if (caller.role === 'SUPER_ADMIN') {
+      const { instituteId } = req.query;
+      if (instituteId && instituteId !== 'ALL' && Types.ObjectId.isValid(instituteId as string)) {
+        filter.instituteId = new Types.ObjectId(instituteId as string);
+      }
+    } else if (caller.role === 'ADMIN') {
       // Institute Admin sees all pending faculty & students in their institute
       filter = {
         instituteId: caller.instituteId,
@@ -272,11 +266,11 @@ router.post('/users/batch', authenticate, requireRole('FACULTY', 'ADMIN', 'SUPER
       },
     });
 
-    if (caller.instituteId && Array.isArray(userIds)) {
+    if (Array.isArray(userIds)) {
       userIds.forEach((uid) => {
         dispatchNotification({
           userId: uid,
-          instituteId: caller.instituteId!.toString(),
+          instituteId: caller.instituteId ? caller.instituteId.toString() : '',
           title: status === 'ACTIVE' ? 'Account Approved' : 'Registration Declined',
           message: status === 'ACTIVE'
             ? `Your Nexora campus profile has been verified and approved by ${caller.name}.`

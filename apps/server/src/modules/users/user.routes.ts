@@ -107,18 +107,29 @@ async function resolveStudentAcademics(userDoc: any) {
 userRouter.get('/directory', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
-    if (!user || !user.instituteId) {
-      res.status(400).json({ error: 'User does not belong to an institute' });
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized' });
       return;
     }
 
-    const { search, department, role, academicYear } = req.query;
+    const { search, department, role, academicYear, instituteId } = req.query;
 
     const query: any = {
-      instituteId: new Types.ObjectId(user.instituteId),
       status: 'ACTIVE',
       _id: { $ne: new Types.ObjectId(user.id) }, // exclude self
     };
+
+    if (user.role === 'SUPER_ADMIN') {
+      if (instituteId && instituteId !== 'ALL' && Types.ObjectId.isValid(instituteId as string)) {
+        query.instituteId = new Types.ObjectId(instituteId as string);
+      }
+    } else {
+      if (!user.instituteId) {
+        res.status(400).json({ error: 'User does not belong to an institute' });
+        return;
+      }
+      query.instituteId = new Types.ObjectId(user.instituteId);
+    }
 
     if (department && department !== 'ALL') {
       query.department = department;

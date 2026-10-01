@@ -33,7 +33,8 @@ export function rateLimiter(options: { windowMs: number; max: number; message?: 
   const { windowMs, max, message = 'Too many requests. Please slow down.' } = options;
 
   return (req: Request, res: Response, next: NextFunction): void => {
-    const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null) || req.ip || req.socket.remoteAddress || '127.0.0.1';
     const key = `${req.baseUrl || req.path}_${ip}`;
     const now = Date.now();
 
@@ -65,13 +66,13 @@ export function rateLimiter(options: { windowMs: number; max: number; message?: 
 // Specialized Rate Limiters
 export const authRateLimiter = rateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 30 : 1000,
-  message: 'Too many authentication attempts from this IP address. Please wait 15 minutes before trying again.',
+  max: 1000,
+  message: 'Too many authentication attempts from this IP address. Please wait a few minutes before trying again.',
 });
 
 export const apiRateLimiter = rateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: 300, // 300 requests per minute
+  max: 1000,
   message: 'High request frequency detected. Rate limit exceeded.',
 });
 

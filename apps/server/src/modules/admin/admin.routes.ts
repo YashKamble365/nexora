@@ -136,11 +136,13 @@ adminRouter.get('/users', authenticate, requireRole('ADMIN', 'SUPER_ADMIN'), asy
     const { status, role, department, search, instituteId, page = 1, limit = 25 } = req.query;
     const query: any = {};
     if (user.role === 'SUPER_ADMIN') {
-      if (instituteId && instituteId !== 'ALL') {
+      if (instituteId && instituteId !== 'ALL' && Types.ObjectId.isValid(instituteId as string)) {
         query.instituteId = new Types.ObjectId(instituteId as string);
       }
     } else {
-      query.instituteId = new Types.ObjectId(user.instituteId);
+      if (user.instituteId && Types.ObjectId.isValid(user.instituteId)) {
+        query.instituteId = new Types.ObjectId(user.instituteId);
+      }
     }
 
     if (status && status !== 'ALL') {

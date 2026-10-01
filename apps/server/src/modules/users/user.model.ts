@@ -1,5 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import { Role, UserStatus, FacultyRole, TeachingAssignment } from '@nexora/types';
+import '../institutes/institute.model.js';
 
 export interface IUserDocument extends Document {
   name: string;

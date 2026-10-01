@@ -42,6 +42,7 @@ import { Complaint } from './modules/complaints/complaint.model.js';
 import { Event } from './modules/events/event.model.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 4000;
 

@@ -25,41 +25,51 @@ export const DEMO_CREDENTIALS: Record<string, { email: string; password: string 
   SUPER_ADMIN: { email: "superadmin@nexora.edu", password: "super123" },
 }
 
+let obtainTokenPromise: Promise<string | null> | null = null
+
 export async function obtainToken(): Promise<string | null> {
   if (typeof window === "undefined") return null
   const existing = localStorage.getItem("nexora_token")
   if (existing) return existing
 
-  try {
-    const storedUser = localStorage.getItem("nexora_user")
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser)
-        if (parsed.role === "SUPER_ADMIN" || parsed.email === DEMO_CREDENTIALS.SUPER_ADMIN.email) {
-          const base = getApiBase()
-          const res = await fetch(`${base}/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(DEMO_CREDENTIALS.SUPER_ADMIN),
-          })
+  if (obtainTokenPromise) return obtainTokenPromise
 
-          if (res.ok) {
-            const data = await res.json()
-            if (data.token) {
-              localStorage.setItem("nexora_token", data.token)
-              document.cookie = `nexora_token=${data.token}; path=/; max-age=604800`
-              return data.token
+  obtainTokenPromise = (async () => {
+    try {
+      const storedUser = localStorage.getItem("nexora_user")
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser)
+          if (parsed.role === "SUPER_ADMIN" || parsed.email === DEMO_CREDENTIALS.SUPER_ADMIN.email) {
+            const base = getApiBase()
+            const res = await fetch(`${base}/auth/login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(DEMO_CREDENTIALS.SUPER_ADMIN),
+            })
+
+            if (res.ok) {
+              const data = await res.json()
+              if (data.token) {
+                localStorage.setItem("nexora_token", data.token)
+                document.cookie = `nexora_token=${data.token}; path=/; max-age=604800`
+                return data.token
+              }
             }
           }
+        } catch {
+          // ignore parse error
         }
-      } catch {
-        // ignore parse error
       }
+    } catch {
+      // API unavailable
+    } finally {
+      obtainTokenPromise = null
     }
-  } catch {
-    // API unavailable
-  }
-  return null
+    return null
+  })()
+
+  return obtainTokenPromise
 }
 
 async function request<T>(endpoint: string, options: RequestInit = {}, isRetry = false): Promise<T> {
