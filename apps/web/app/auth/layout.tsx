@@ -71,7 +71,7 @@ export default function AuthLayout({
           <ThemeToggle />
         </div>
 
-        <div className="w-full max-w-md mx-auto my-auto py-8">
+        <div className="w-full max-w-md md:max-w-xl lg:max-w-2xl xl:max-w-3xl mx-auto my-auto py-8 transition-all">
           {children}
         </div>
 

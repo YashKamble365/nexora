@@ -96,11 +96,31 @@ export function NotificationBell() {
   const [loading, setLoading] = React.useState<boolean>(true)
   const [open, setOpen] = React.useState<boolean>(false)
 
-  // 1. Initial Load of Notifications
+  const knownIdsRef = React.useRef<Set<string>>(new Set())
+  const hasLoadedRef = React.useRef(false)
+
+  // 1. Load Notifications & Sync New Items
   const fetchNotifications = React.useCallback(async () => {
     try {
       const data = await apiClient.get<NotificationDTO[]>("/notifications")
       if (Array.isArray(data)) {
+        // If this is a background sync, detect newly arrived unread notifications
+        if (hasLoadedRef.current) {
+          data.forEach((item) => {
+            if (!item.isRead && !knownIdsRef.current.has(item.id)) {
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("nexora_notification_sync", { detail: item })
+                )
+              }
+            }
+          })
+        }
+
+        // Update known IDs
+        data.forEach((n) => knownIdsRef.current.add(n.id))
+        hasLoadedRef.current = true
+
         setNotifications(data)
         const unread = data.filter((n) => !n.isRead).length
         setUnreadCount(unread)
@@ -112,8 +132,33 @@ export function NotificationBell() {
     }
   }, [])
 
+  // Auto-sync notifications on mount, tab focus, visibility change, and interval
   React.useEffect(() => {
     fetchNotifications()
+
+    // 10-second polling interval ensures real-time sync even if WebSockets are throttled
+    const interval = setInterval(() => {
+      fetchNotifications()
+    }, 10000)
+
+    const onFocus = () => fetchNotifications()
+    const onVisibility = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        fetchNotifications()
+      }
+    }
+    const onSocketConnect = () => fetchNotifications()
+
+    window.addEventListener("focus", onFocus)
+    document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("nexora_socket_connected", onSocketConnect)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("focus", onFocus)
+      document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("nexora_socket_connected", onSocketConnect)
+    }
   }, [fetchNotifications])
 
   // 2. Realtime Socket.IO listener for live notification broadcasts
@@ -121,6 +166,7 @@ export function NotificationBell() {
     if (!socket) return
 
     const handleNewNotification = (notification: NotificationDTO) => {
+      knownIdsRef.current.add(notification.id)
       setNotifications((prev) => [
         notification,
         ...prev.filter((n) => n.id !== notification.id),

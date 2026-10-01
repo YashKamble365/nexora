@@ -122,6 +122,35 @@ export default function DashboardLayout({
   React.useEffect(() => {
     fetchActiveEmergency()
     fetchCounts()
+
+    // 15-second background sync keeps all dashboard counts and badges fresh
+    const interval = setInterval(() => {
+      fetchActiveEmergency()
+      fetchCounts()
+    }, 15000)
+
+    const onFocus = () => {
+      fetchActiveEmergency()
+      fetchCounts()
+    }
+
+    const onVisibility = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        fetchActiveEmergency()
+        fetchCounts()
+      }
+    }
+
+    window.addEventListener("focus", onFocus)
+    document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("nexora_socket_connected", onFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("focus", onFocus)
+      document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("nexora_socket_connected", onFocus)
+    }
   }, [fetchActiveEmergency, fetchCounts])
 
   // 3. Clear badge for currently viewed section

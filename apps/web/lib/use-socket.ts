@@ -67,10 +67,10 @@ export function getSocketInstance(forceToken?: string): Socket | null {
     withCredentials: true,
     autoConnect: true,
     reconnection: true,
-    reconnectionAttempts: 15,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
-    transports: ["websocket", "polling"],
+    transports: ["polling", "websocket"],
   })
 
   globalSocket.on("connect", () => {
@@ -78,6 +78,9 @@ export function getSocketInstance(forceToken?: string): Socket | null {
     activeRooms.forEach((roomId) => {
       globalSocket?.emit("join_conversation", roomId)
     })
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("nexora_socket_connected"))
+    }
   })
 
   globalSocket.on("connect_error", async (err) => {

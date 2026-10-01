@@ -114,21 +114,30 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
   const router = useRouter()
   const { socket } = useSocket()
   const [toasts, setToasts] = React.useState<ToastItem[]>([])
+  const seenNotificationIds = React.useRef(new Set<string>())
 
   const dismissToast = React.useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
   const showToast = React.useCallback(
-    (item: Omit<ToastItem, "id">) => {
-      const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+    (item: Omit<ToastItem, "id"> & { id?: string }) => {
+      const id = item.id || `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+      if (seenNotificationIds.current.has(id)) return
+      seenNotificationIds.current.add(id)
+
       const newToast: ToastItem = { ...item, id }
 
-      playNotificationChime()
-      setToasts((prev) => [newToast, ...prev.slice(0, 3)]) // Maximum 4 toasts stacked
+      try {
+        playNotificationChime()
+      } catch {
+        // Autoplay policy fallback
+      }
+
+      setToasts((prev) => [newToast, ...prev.filter((t) => t.id !== id).slice(0, 3)])
 
       // Auto dismiss timer
-      const duration = item.duration ?? 5000
+      const duration = item.duration ?? 5500
       setTimeout(() => {
         dismissToast(id)
       }, duration)
@@ -136,12 +145,12 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
     [dismissToast]
   )
 
-  // Listen to Socket.IO live notifications across all modules
+  // Listen to Socket.IO live notifications & background sync events
   React.useEffect(() => {
-    if (!socket) return
-
     const handleNewNotification = (notif: any) => {
+      if (!notif) return
       showToast({
+        id: notif.id,
         title: notif.title,
         message: notif.message,
         type: notif.type,
@@ -150,7 +159,9 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
     }
 
     const handleEmergencyBroadcast = (alert: any) => {
+      if (!alert) return
       showToast({
+        id: alert.id,
         title: `EMERGENCY ALERT: ${alert.title}`,
         message: alert.actionRequired || alert.message,
         type: "SYSTEM",
@@ -159,12 +170,26 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
       })
     }
 
-    socket.on("new_notification", handleNewNotification)
-    socket.on("emergency_alert_broadcast", handleEmergencyBroadcast)
+    const handleSyncEvent = (e: Event) => {
+      const customEvent = e as CustomEvent
+      if (customEvent.detail) {
+        handleNewNotification(customEvent.detail)
+      }
+    }
+
+    if (socket) {
+      socket.on("new_notification", handleNewNotification)
+      socket.on("emergency_alert_broadcast", handleEmergencyBroadcast)
+    }
+
+    window.addEventListener("nexora_notification_sync", handleSyncEvent)
 
     return () => {
-      socket.off("new_notification", handleNewNotification)
-      socket.off("emergency_alert_broadcast", handleEmergencyBroadcast)
+      if (socket) {
+        socket.off("new_notification", handleNewNotification)
+        socket.off("emergency_alert_broadcast", handleEmergencyBroadcast)
+      }
+      window.removeEventListener("nexora_notification_sync", handleSyncEvent)
     }
   }, [socket, showToast])
 
@@ -187,7 +212,7 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
       {/* Floating Popup Toasts Container */}
       <div
         aria-live="polite"
-        className="fixed top-4 right-4 z-50 flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full pointer-events-none px-4 sm:px-0"
+        className="fixed top-4 right-4 sm:top-5 sm:right-5 z-[9999] flex flex-col gap-2.5 max-w-[calc(100vw-2rem)] sm:max-w-md w-full pointer-events-none px-2 sm:px-0"
       >
         {toasts.map((toast) => {
           const visuals = getToastVisuals(toast.type)

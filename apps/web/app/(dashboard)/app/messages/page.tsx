@@ -821,6 +821,7 @@ export default function MessagesPage() {
   }
 
   const openNewGroupModal = () => {
+    if (!isStudent) return
     setGroupError(null)
     setGroupName("")
     setGroupDescription("")
@@ -1369,9 +1370,24 @@ export default function MessagesPage() {
     }
   }
 
+  const isStudent = user?.role === "STUDENT"
+
+  // If a non-student user is on EXPLORE tab, revert to ALL
+  React.useEffect(() => {
+    if (user && user.role !== "STUDENT" && activeTab === "EXPLORE") {
+      setActiveTab("ALL")
+    }
+  }, [user, activeTab])
+
   // Filtered conversation list
   const filteredConversations = conversations.filter((c) => {
-    if (activeTab === "CHANNELS" && c.type !== "CHANNEL") return false
+    // Student groups (CUSTOM scope) are strictly for students
+    if (!isStudent && c.scope === "CUSTOM") return false
+
+    if (activeTab === "CHANNELS") {
+      if (c.type !== "CHANNEL") return false
+      if (!isStudent && c.scope === "CUSTOM") return false
+    }
     if (activeTab === "DIRECT" && c.type !== "DIRECT") return false
 
     if (searchFilter.trim().length > 0) {
@@ -1396,7 +1412,7 @@ export default function MessagesPage() {
   return (
     <div className="flex h-[calc(100dvh-4.25rem)] overflow-hidden bg-background">
       {/* ================= COLUMN 1: SIDEBAR GRID ================= */}
-      <div className={cn("w-full md:w-80 shrink-0 border-r border-border flex flex-col bg-card/40 min-w-0 max-w-full", (selectedConversation || activeTab === "EXPLORE") ? "hidden md:flex" : "flex")}>
+      <div className={cn("w-full md:w-80 shrink-0 border-r border-border flex flex-col bg-card/40 min-w-0 max-w-full", (selectedConversation || (activeTab === "EXPLORE" && isStudent)) ? "hidden md:flex" : "flex")}>
         {/* Header */}
         <div className="p-3.5 border-b border-border space-y-3">
           <div className="flex items-center justify-between">
@@ -1426,16 +1442,18 @@ export default function MessagesPage() {
                   <span className="hidden sm:inline">Channel</span>
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openNewGroupModal}
-                className="h-8 gap-1 text-xs font-medium border-border hover:bg-muted"
-                title="Create Custom Student Group"
-              >
-                <Users className="size-3.5" />
-                <span className="hidden sm:inline">Group</span>
-              </Button>
+              {isStudent && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openNewGroupModal}
+                  className="h-8 gap-1 text-xs font-medium border-border hover:bg-muted"
+                  title="Create Custom Student Group"
+                >
+                  <Users className="size-3.5" />
+                  <span className="hidden sm:inline">Group</span>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -1460,7 +1478,7 @@ export default function MessagesPage() {
           </div>
 
           {/* Navigation Filter Tabs */}
-          <div className="grid grid-cols-5 p-0.5 bg-muted/50 rounded-lg text-[11px] font-medium text-center">
+          <div className={`grid ${isStudent ? "grid-cols-5" : "grid-cols-4"} p-0.5 bg-muted/50 rounded-lg text-[11px] font-medium text-center`}>
             <button
               onClick={() => setActiveTab("ALL")}
               className={`py-1 rounded-md transition-colors ${activeTab === "ALL" ? "bg-background text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
@@ -1484,22 +1502,24 @@ export default function MessagesPage() {
               className={`py-1 rounded-md transition-colors relative ${activeTab === "REQUESTS" ? "bg-background text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
             >
               Requests
-              {(pendingRequests.length + groupInvites.length) > 0 && (
+              {(pendingRequests.length + (isStudent ? groupInvites.length : 0)) > 0 && (
                 <span className="absolute -top-1 -right-1 size-4 bg-primary text-[10px] text-primary-foreground font-bold rounded-full flex items-center justify-center">
-                  {pendingRequests.length + groupInvites.length}
+                  {pendingRequests.length + (isStudent ? groupInvites.length : 0)}
                 </span>
               )}
             </button>
-            <button
-              onClick={() => {
-                setActiveTab("EXPLORE")
-                fetchDiscoverGroups()
-              }}
-              className={`py-1 rounded-md transition-colors flex items-center justify-center gap-1 ${activeTab === "EXPLORE" ? "bg-primary text-primary-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <Compass className="size-3" />
-              <span>Explore</span>
-            </button>
+            {isStudent && (
+              <button
+                onClick={() => {
+                  setActiveTab("EXPLORE")
+                  fetchDiscoverGroups()
+                }}
+                className={`py-1 rounded-md transition-colors flex items-center justify-center gap-1 ${activeTab === "EXPLORE" ? "bg-primary text-primary-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Compass className="size-3" />
+                <span>Explore</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -1538,20 +1558,22 @@ export default function MessagesPage() {
                 >
                   Sent ({sentRequests.length})
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setRequestsDirection("GROUPS")}
-                  className={`flex-1 py-1 rounded-md text-[11px] font-medium transition-all relative ${
-                    requestsDirection === "GROUPS"
-                      ? "bg-background text-foreground shadow-xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Groups ({groupInvites.length})
-                </button>
+                {isStudent && (
+                  <button
+                    type="button"
+                    onClick={() => setRequestsDirection("GROUPS")}
+                    className={`flex-1 py-1 rounded-md text-[11px] font-medium transition-all relative ${
+                      requestsDirection === "GROUPS"
+                        ? "bg-background text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Groups ({groupInvites.length})
+                  </button>
+                )}
               </div>
 
-              {requestsDirection === "GROUPS" ? (
+              {requestsDirection === "GROUPS" && isStudent ? (
                 groupInvites.length === 0 ? (
                   <div className="text-center py-10 px-4 text-xs text-muted-foreground">
                     No pending group invitations. When classmates invite you to study circles or project teams, invitations appear here for your consent.
@@ -2015,8 +2037,8 @@ export default function MessagesPage() {
       </div>
 
       {/* ================= COLUMN 2: ACTIVE CHAT CANVAS OR EXPLORE DIRECTORY ================= */}
-      <div className={cn("flex-1 flex flex-col min-w-0 bg-background overflow-hidden w-full max-w-full", (!selectedConversation && activeTab !== "EXPLORE") ? "hidden md:flex" : "flex")}>
-        {activeTab === "EXPLORE" ? (
+      <div className={cn("flex-1 flex flex-col min-w-0 bg-background overflow-hidden w-full max-w-full", (!selectedConversation && (activeTab !== "EXPLORE" || !isStudent)) ? "hidden md:flex" : "flex")}>
+        {activeTab === "EXPLORE" && isStudent ? (
           <div className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 max-w-5xl mx-auto w-full min-w-0">
             {/* Mobile Return to Messages Button */}
             <div className="md:hidden">

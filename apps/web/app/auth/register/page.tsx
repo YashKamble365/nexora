@@ -591,31 +591,31 @@ function RegisterForm() {
               <label className="text-xs font-semibold text-foreground">
                 Faculty Academic Role & Authority Level
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* 1. HOD */}
                 <div
                   onClick={() => setFacultyRole("HOD")}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col justify-between text-left ${
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between text-left ${
                     facultyRole === "HOD"
-                      ? "border-purple-600 bg-purple-500/10 ring-1 ring-purple-600"
+                      ? "border-purple-600 bg-purple-500/10 ring-1 ring-purple-600 shadow-xs"
                       : "border-border bg-card/60 hover:bg-muted/50"
                   }`}
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
-                        <Building2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                        <Building2 className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
                         <span>HoD</span>
                       </div>
-                      <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400">
+                      <span className="text-[9px] font-semibold uppercase px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400">
                         Dept Lead
                       </span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground leading-snug">
+                    <p className="text-[11px] text-muted-foreground leading-snug">
                       Head of Department. Approves faculty & students, manages subjects.
                     </p>
                   </div>
-                  <div className="pt-2 flex items-center gap-1 text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                  <div className="pt-2.5 flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400">
                     <span>{facultyRole === "HOD" ? "✓ Selected" : "Select Role"}</span>
                   </div>
                 </div>
@@ -623,27 +623,27 @@ function RegisterForm() {
                 {/* 2. Class Coordinator */}
                 <div
                   onClick={() => setFacultyRole("CLASS_COORDINATOR")}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col justify-between text-left ${
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between text-left ${
                     facultyRole === "CLASS_COORDINATOR"
-                      ? "border-primary bg-primary/10 ring-1 ring-primary"
+                      ? "border-primary bg-primary/10 ring-1 ring-primary shadow-xs"
                       : "border-border bg-card/60 hover:bg-muted/50"
                   }`}
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
-                        <UserCheck className="h-3.5 w-3.5 text-primary" />
+                        <UserCheck className="h-4 w-4 text-primary shrink-0" />
                         <span>Coordinator</span>
                       </div>
-                      <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded-full bg-primary/20 text-primary">
+                      <span className="text-[9px] font-semibold uppercase px-2 py-0.5 rounded-full bg-primary/20 text-primary">
                         Batch Verifier
                       </span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground leading-snug">
+                    <p className="text-[11px] text-muted-foreground leading-snug">
                       Oversees assigned year batch. Verifies incoming student applications.
                     </p>
                   </div>
-                  <div className="pt-2 flex items-center gap-1 text-[10px] font-semibold text-primary">
+                  <div className="pt-2.5 flex items-center gap-1 text-[11px] font-semibold text-primary">
                     <span>{facultyRole === "CLASS_COORDINATOR" ? "✓ Selected" : "Select Role"}</span>
                   </div>
                 </div>
@@ -651,27 +651,27 @@ function RegisterForm() {
                 {/* 3. Professor */}
                 <div
                   onClick={() => setFacultyRole("PROFESSOR")}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col justify-between text-left ${
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between text-left ${
                     facultyRole === "PROFESSOR"
-                      ? "border-blue-600 bg-blue-500/10 ring-1 ring-blue-600"
+                      ? "border-blue-600 bg-blue-500/10 ring-1 ring-blue-600 shadow-xs"
                       : "border-border bg-card/60 hover:bg-muted/50"
                   }`}
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
-                        <BookOpen className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                        <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
                         <span>Professor</span>
                       </div>
-                      <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400">
+                      <span className="text-[9px] font-semibold uppercase px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400">
                         Academic
                       </span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground leading-snug">
+                    <p className="text-[11px] text-muted-foreground leading-snug">
                       Course instruction, notes upload, syllabus delivery & student engagement.
                     </p>
                   </div>
-                  <div className="pt-2 flex items-center gap-1 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                  <div className="pt-2.5 flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
                     <span>{facultyRole === "PROFESSOR" ? "✓ Selected" : "Select Role"}</span>
                   </div>
                 </div>
@@ -732,41 +732,41 @@ function RegisterForm() {
 
           {/* If Faculty: Multi-class & Multi-subject Teaching Assignment Builder */}
           {role === "FACULTY" && (
-            <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/20">
+            <div className="space-y-2.5 p-3.5 sm:p-4 rounded-xl border border-border bg-muted/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <BookOpen className="h-3.5 w-3.5 text-primary" />
+                  <BookOpen className="h-4 w-4 text-primary" />
                   <label className="text-xs font-semibold text-foreground">Teaching Assignments & Classes</label>
                 </div>
-                <span className="text-[10px] text-muted-foreground">{teachingAssignments.length} class(es)</span>
+                <span className="text-[11px] font-medium text-muted-foreground">{teachingAssignments.length} class(es)</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground">
                 Add classes and subjects you teach (e.g. Sem 2 & Sem 5). You can add or modify assignments anytime in your profile.
               </p>
 
-              <div className="space-y-2 pt-1">
+              <div className="space-y-2.5 pt-1">
                 {teachingAssignments.map((assignment, idx) => (
-                  <div key={idx} className="p-2.5 rounded-md border border-border/80 bg-background space-y-2 text-xs">
+                  <div key={idx} className="p-3 rounded-lg border border-border/80 bg-background space-y-2.5 text-xs shadow-2xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-medium text-muted-foreground">Class #{idx + 1}</span>
+                      <span className="text-[11px] font-semibold text-foreground">Class #{idx + 1}</span>
                       {teachingAssignments.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeTeachingAssignment(idx)}
-                          className="text-muted-foreground hover:text-destructive transition-colors text-[10px] flex items-center gap-1"
+                          className="text-muted-foreground hover:text-destructive transition-colors text-[11px] flex items-center gap-1"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3.5 w-3.5" />
                           <span>Remove</span>
                         </button>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <div>
-                        <label className="text-[10px] text-muted-foreground">Year / Class</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 items-end">
+                      <div className="lg:col-span-3">
+                        <label className="text-[10px] font-semibold text-muted-foreground block mb-1">Year / Class</label>
                         <select
                           value={assignment.academicYear}
                           onChange={(e) => updateTeachingAssignment(idx, "academicYear", e.target.value)}
-                          className="w-full h-8 rounded border border-input bg-background px-2 text-xs"
+                          className="w-full h-8.5 rounded-md border border-input bg-background px-2 text-xs focus:ring-1 focus:ring-ring"
                         >
                           {academicYears.map((yr) => (
                             <option key={yr} value={yr}>
@@ -775,12 +775,12 @@ function RegisterForm() {
                           ))}
                         </select>
                       </div>
-                      <div>
-                        <label className="text-[10px] text-muted-foreground">Semester</label>
+                      <div className="lg:col-span-3">
+                        <label className="text-[10px] font-semibold text-muted-foreground block mb-1">Semester</label>
                         <select
                           value={assignment.semester}
                           onChange={(e) => updateTeachingAssignment(idx, "semester", e.target.value)}
-                          className="w-full h-8 rounded border border-input bg-background px-2 text-xs"
+                          className="w-full h-8.5 rounded-md border border-input bg-background px-2 text-xs focus:ring-1 focus:ring-ring"
                         >
                           {semesters.map((sem) => (
                             <option key={sem} value={sem}>
@@ -789,13 +789,13 @@ function RegisterForm() {
                           ))}
                         </select>
                       </div>
-                      <div>
-                        <label className="text-[10px] text-muted-foreground">Subject Name</label>
+                      <div className="lg:col-span-4">
+                        <label className="text-[10px] font-semibold text-muted-foreground block mb-1">Subject Name</label>
                         <Input
                           value={assignment.subjectName}
                           onChange={(e) => updateTeachingAssignment(idx, "subjectName", e.target.value)}
                           placeholder="e.g. Data Structures"
-                          className="h-8 text-xs"
+                          className="h-8.5 text-xs"
                           list={`catalog-subjects-${idx}`}
                           required
                         />
@@ -807,13 +807,13 @@ function RegisterForm() {
                           ))}
                         </datalist>
                       </div>
-                      <div>
-                        <label className="text-[10px] text-muted-foreground">Division (Opt)</label>
+                      <div className="lg:col-span-2">
+                        <label className="text-[10px] font-semibold text-muted-foreground block mb-1">Division (Opt)</label>
                         <Input
                           value={assignment.division}
                           onChange={(e) => updateTeachingAssignment(idx, "division", e.target.value)}
                           placeholder="e.g. A"
-                          className="h-8 text-xs"
+                          className="h-8.5 text-xs uppercase"
                         />
                       </div>
                     </div>
@@ -825,9 +825,9 @@ function RegisterForm() {
                   variant="outline"
                   size="sm"
                   onClick={addTeachingAssignment}
-                  className="w-full h-7 text-xs border-dashed gap-1.5"
+                  className="w-full h-8 text-xs border-dashed gap-1.5"
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-3.5 w-3.5" />
                   <span>Add Another Class / Subject</span>
                 </Button>
               </div>
